@@ -1,12 +1,12 @@
-const E=id=>document.getElementById(id),symbols=['🍒','🍋','🍊','🔔','⭐','💎','7️⃣'];
+const E=id=>document.getElementById(id),symbols=['🍒','🍋','🍊','🔔','⭐','💎','7️⃣','🃏'];
 const pay={'🍒':2,'🍋':3,'🍊':4,'🔔':6,'⭐':8,'💎':15,'7️⃣':25};
 const minGroup={'🍒':7,'🍋':7,'🍊':7,'🔔':6,'⭐':6,'💎':5,'7️⃣':5};
-let credits=1000,bet=10,spinning=false,history=[];const ROWS=5,COLS=6,reels=E('reels');
+const WILD='🃏';let credits=1000,bet=10,spinning=false,history=[];const ROWS=5,COLS=6,reels=E('reels');
 function random(){return symbols[Math.floor(Math.random()*symbols.length)]}function makeGrid(){return Array.from({length:ROWS},()=>Array.from({length:COLS},random))}
 function render(grid){reels.innerHTML='';for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const d=document.createElement('div');d.className='reel';d.dataset.r=r;d.dataset.c=c;d.innerHTML=`<span class="symbol">${grid[r][c]}</span>`;reels.appendChild(d)}}
 function update(){E('credits').textContent=credits;E('bet').textContent=bet;E('win').textContent=0}
 function changeBet(d){if(!spinning){bet=Math.max(1,Math.min(100,bet+d));update()}}E('betDown').onclick=()=>changeBet(-1);E('betUp').onclick=()=>changeBet(1);
-function groups(grid){const seen=new Set(),found=[];const key=(r,c)=>`${r},${c}`;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(seen.has(key(r,c)))continue;const s=grid[r][c],q=[[r,c]],g=[];seen.add(key(r,c));while(q.length){const [x,y]=q.pop();g.push([x,y]);for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=key(nx,ny);if(nx>=0&&nx<ROWS&&ny>=0&&ny<COLS&&!seen.has(k)&&grid[nx][ny]===s){seen.add(k);q.push([nx,ny])}}}if(g.length>=minGroup[s])found.push({cells:g,symbol:s,size:g.length,mult:pay[s]})}return found}
+function groups(grid){const seen=new Set(),found=[];const key=(r,c)=>`${r},${c}`;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(seen.has(key(r,c))||grid[r][c]===WILD)continue;const s=grid[r][c],q=[[r,c]],g=[];seen.add(key(r,c));while(q.length){const [x,y]=q.pop();g.push([x,y]);for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=key(nx,ny);if(nx>=0&&nx<ROWS&&ny>=0&&ny<COLS&&!seen.has(k)&&(grid[nx][ny]===s||grid[nx][ny]===WILD)){seen.add(k);q.push([nx,ny])}}}if(g.length>=minGroup[s])found.push({cells:g,symbol:s,size:g.length,mult:pay[s]})}return found}
 function payout(gs,mult){return gs.reduce((n,g)=>n+bet*g.mult*mult,0)}
 function showText(text){const t=E('cascadeTitle');t.textContent=text;t.className='cascade-title show'}
 function highlight(gs){document.querySelectorAll('.reel').forEach(x=>x.classList.remove('win'));gs.forEach(g=>g.cells.forEach(([r,c])=>{const e=document.querySelector(`.reel[data-r="${r}"][data-c="${c}"]`);if(e)e.classList.add('win')}))}
