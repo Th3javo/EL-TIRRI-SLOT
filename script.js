@@ -1,13 +1,13 @@
 const E=id=>document.getElementById(id),symbols=['🍒','🍋','🍊','🔔','⭐','💎','7️⃣','🃏'];
-const pay={'🍒':2,'🍋':3,'🍊':4,'🔔':6,'⭐':8,'💎':15,'7️⃣':25};
-const minGroup={'🍒':5,'🍋':5,'🍊':5,'🔔':5,'⭐':5,'💎':4,'7️⃣':4};
+const pay={'🍒':[0.5,1,1.5,3],'🍋':[0.75,1.5,2,4],'🍊':[1,2,3,5],'🔔':[1.5,3,4,7],'⭐':[2,4,6,10],'💎':[3,6,10,15],'7️⃣':[5,10,20,30]};
 const WILD='🃏',ROWS=5,COLS=6;let credits=1000,bet=10,spinning=false,history=[];const reels=E('reels');
 function random(){return symbols[Math.floor(Math.random()*symbols.length)]}function makeGrid(){return Array.from({length:ROWS},()=>Array.from({length:COLS},random))}
 function render(grid){reels.innerHTML='';for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const d=document.createElement('div');d.className='reel';d.dataset.r=r;d.dataset.c=c;d.innerHTML=`<span class="symbol">${grid[r][c]}</span>`;reels.appendChild(d)}}
 function update(){E('credits').textContent=credits;E('bet').textContent=bet;E('win').textContent=0}
 function changeBet(d){if(!spinning){bet=Math.max(1,Math.min(100,bet+d));update()}}E('betDown').onclick=()=>changeBet(-1);E('betUp').onclick=()=>changeBet(1);
-function groups(grid){const seen=new Set(),found=[];const key=(r,c)=>`${r},${c}`;const dirs=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(seen.has(key(r,c))||grid[r][c]===WILD)continue;const s=grid[r][c],q=[[r,c]],g=[];seen.add(key(r,c));while(q.length){const [x,y]=q.pop();g.push([x,y]);for(const[dx,dy]of dirs){const nx=x+dx,ny=y+dy,k=key(nx,ny);if(nx>=0&&nx<ROWS&&ny>=0&&ny<COLS&&!seen.has(k)&&(grid[nx][ny]===s||grid[nx][ny]===WILD)){seen.add(k);q.push([nx,ny])}}}if(g.length>=minGroup[s])found.push({cells:g,symbol:s,size:g.length,mult:pay[s]})}return found}
-function payout(gs,mult){return gs.reduce((n,g)=>n+bet*g.mult*mult,0)}
+function groups(grid){const seen=new Set(),found=[];const key=(r,c)=>`${r},${c}`;const dirs=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(seen.has(key(r,c))||grid[r][c]===WILD)continue;const s=grid[r][c],q=[[r,c]],g=[];seen.add(key(r,c));while(q.length){const [x,y]=q.pop();g.push([x,y]);for(const[dx,dy]of dirs){const nx=x+dx,ny=y+dy,k=key(nx,ny);if(nx>=0&&nx<ROWS&&ny>=0&&ny<COLS&&!seen.has(k)&&(grid[nx][ny]===s||grid[nx][ny]===WILD)){seen.add(k);q.push([nx,ny])}}}if(g.length>=4)found.push({cells:g,symbol:s,size:g.length,mult:pay[s]})}return found}
+function tier(size){return size<=5?0:size<=7?1:size<=9?2:3}
+function payout(gs,mult){return gs.reduce((n,g)=>n+bet*g.mult[tier(g.size)]*mult,0)}
 function showText(text){const t=E('cascadeTitle');t.textContent=text;t.className='cascade-title show'}
 function highlight(gs){document.querySelectorAll('.reel').forEach(x=>x.classList.remove('win'));gs.forEach(g=>g.cells.forEach(([r,c])=>{const e=document.querySelector(`.reel[data-r="${r}"][data-c="${c}"]`);if(e)e.classList.add('win')}))}
 function collapse(grid,gs){const gone=new Set(gs.flatMap(g=>g.cells.map(([r,c])=>`${r},${c}`)));for(let c=0;c<COLS;c++){const kept=[];for(let r=ROWS-1;r>=0;r--)if(!gone.has(`${r},${c}`))kept.push(grid[r][c]);for(let r=ROWS-1;r>=0;r--)grid[r][c]=kept[ROWS-1-r]||random()}}
